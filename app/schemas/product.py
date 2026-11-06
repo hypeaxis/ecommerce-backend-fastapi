@@ -9,6 +9,7 @@ Yêu cầu thực tập sinh tự thực hiện:
 """
 from datetime import datetime
 from typing import Optional
+from decimal import Decimal
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
@@ -24,6 +25,7 @@ class CategoryCreate(CategoryBase):
 class CategoryResponse(CategoryBase):
     id: int
     created_at: datetime
+    updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -31,13 +33,14 @@ class CategoryResponse(CategoryBase):
 class ProductBase(BaseModel):
     name: str = Field(min_length=2, max_length=200)
     sku: str = Field(min_length=3, max_length=50)
-    price: float = Field(gt=0)
+    description: Optional[str] = None
+    price: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
     category_id: int
 
 
 class ProductCreate(ProductBase):
-    description: Optional[str] = None
     stock_quantity: int = Field(default=0, ge=0)
+    is_active: bool = True
 
 
 class ProductResponse(ProductBase):
@@ -45,4 +48,15 @@ class ProductResponse(ProductBase):
     stock_quantity: int
     is_active: bool
     created_at: datetime
+    updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    sku: Optional[str] = Field(default=None, min_length=3, max_length=50)
+    description: Optional[str] = None
+    price: Optional[Decimal] = Field(default=None, gt=0, max_digits=10, decimal_places=2)
+    stock_quantity: Optional[int] = Field(default=None, ge=0)
+    is_active: Optional[bool] = None
+    category_id: Optional[int] = None
