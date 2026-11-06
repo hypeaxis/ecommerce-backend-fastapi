@@ -24,7 +24,86 @@ from app.core.exceptions import NotFoundException, BadRequestException
 
 class ProductService:
     # TODO: Thực tập sinh tự cài đặt các phương thức nghiệp vụ ở Tuần 3 & 4
-    pass
+    # Tuần 3
+    def create_category(self, db: Session, category_in: CategoryCreate) -> Category:
+        existing_category = category_repo.get_by_name(db, category_in.name)
+        if existing_category:
+            raise BadRequestException(
+                message=f"Danh mục '{category_in.name}' đã tồn tại",
+                error_code="CATEGORY_ALREADY_EXISTS",
+            )
+        new_category = Category(**category_in.model_dump())
+        db_obj = category_repo.create(db, new_category)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+    def get_categories(self, db: Session, skip: int = 0, limit: int = 100) -> list[Category]:
+        return category_repo.get_multi(db, skip=skip, limit=limit)
+
+    def get_category(self, db: Session, category_id: int) -> Category:
+        category = category_repo.get_by_id(db, category_id)
+        if not category:
+            raise NotFoundException(message=f"Không tìm thấy danh mục có ID={category_id}")
+        return category
+
+    def create_product(self, db: Session, product_in: ProductCreate) -> Product:
+        category = category_repo.get_by_id(db, product_in.category_id)
+        if not category:
+            raise NotFoundException(message=f"Danh mục có ID={product_in.category_id} không tồn tại")
+
+        existing_product = product_repo.get_by_sku(db, product_in.sku)
+        if existing_product:
+            raise BadRequestException(
+                message=f"Mã SKU '{product_in.sku}' đã tồn tại",
+                error_code="SKU_ALREADY_EXISTS",
+            )
+
+        new_product = Product(**product_in.model_dump())
+        db_obj = product_repo.create(db, new_product)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+    def get_product(self, db: Session, product_id: int) -> Product:
+        product = product_repo.get_by_id_with_category(db, product_id)
+        if not product or not product.is_active:
+            raise NotFoundException(message=f"Không tìm thấy sản phẩm có ID={product_id}")
+        return product
+
+    def update_product(self, db: Session, product_id: int, product_in: ProductUpdate) -> Product:
+        db_obj = self.get_product(db, product_id)
+        update_data = product_in.model_dump(exclude_unset=True)
+
+        if "category_id" in update_data and update_data["category_id"] is not None:
+            category = category_repo.get_by_id(db, update_data["category_id"])
+            if not category:
+                raise NotFoundException(
+                    message=f"Danh mục có ID={update_data['category_id']} không tồn tại"
+                )
+
+        if (
+            "sku" in update_data
+            and update_data["sku"] is not None
+            and update_data["sku"] != db_obj.sku
+        ):
+            existing_sku = product_repo.get_by_sku(db, update_data["sku"])
+            if existing_sku:
+                raise BadRequestException(
+                    message=f"Mã SKU '{update_data['sku']}' đã tồn tại",
+                    error_code="SKU_ALREADY_EXISTS",
+                )
+
+        updated_obj = product_repo.update(db, db_obj, update_data)
+        db.commit()
+        db.refresh(updated_obj)
+        return updated_obj
+
+    def delete_product(self, db: Session, product_id: int) -> None:
+        db_obj = self.get_product(db, product_id)
+        product_repo.update(db, db_obj, {"is_active": False})
+        db.commit()
+
 
 
 product_service = ProductService()
