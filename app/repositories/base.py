@@ -34,7 +34,7 @@ class BaseRepository(Generic[ModelType]):
 
     def update(self, db: Session, db_obj: ModelType, obj_in: dict) -> ModelType:
         for field, value in obj_in.items():
-            if value is not None and hasattr(db_obj, field):
+            if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
         db.flush()
         db.refresh(db_obj)
