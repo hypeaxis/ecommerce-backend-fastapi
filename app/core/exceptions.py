@@ -1,7 +1,10 @@
+import logging
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class AppException(Exception):
@@ -89,5 +92,19 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error_code": "VALIDATION_ERROR",
             "message": "Dữ liệu gửi lên không đúng định dạng",
             "details": errors,
+        },
+    )
+
+
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Xử lý các lỗi hệ thống ngoài dự kiến (500 Internal Server Error) và trả về JSON chuẩn."""
+    logger.exception(f"Unhandled server error: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "success": False,
+            "error_code": "INTERNAL_SERVER_ERROR",
+            "message": "Đã xảy ra lỗi hệ thống ngoài dự kiến",
+            "details": None,
         },
     )
