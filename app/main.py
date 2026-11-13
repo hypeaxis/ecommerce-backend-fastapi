@@ -8,6 +8,7 @@ from app.core.exceptions import (
     AppException,
     app_exception_handler,
     validation_exception_handler,
+    unhandled_exception_handler,
 )
 from app.api.v1.api import api_router
 
@@ -32,7 +33,7 @@ app.add_middleware(
 # Đăng ký Global Exception Handlers
 app.add_exception_handler(AppException, app_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
-
+app.add_exception_handler(Exception, unhandled_exception_handler)
 
 @app.get("/healthz", tags=["Health"])
 def health_check():
