@@ -13,10 +13,11 @@ Yêu cầu thực tập sinh tự thực hiện:
 - update_product
 - delete_product (xóa mềm)
 """
+import math
 from typing import Optional
 from sqlalchemy.orm import Session
 from app.models.product import Product, Category
-from app.schemas.product import ProductCreate, ProductUpdate, CategoryCreate
+from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, CategoryCreate
 from app.schemas.common import PageResponse
 from app.repositories.product_repository import product_repo, category_repo
 from app.core.exceptions import NotFoundException, BadRequestException
@@ -73,6 +74,32 @@ class ProductService:
         if not product or not product.is_active:
             raise NotFoundException(message=f"Không tìm thấy sản phẩm có ID={product_id}")
         return product
+
+    # Tuần 4: Lấy danh sách sản phẩm có phân trang, tìm kiếm và lọc theo danh mục
+    def list_products(
+        self,
+        db: Session,
+        page: int = 1,
+        page_size: int = 10,
+        category_id: Optional[int] = None,
+        search: Optional[str] = None,
+    ) -> PageResponse[ProductResponse]:
+        skip = (page - 1) * page_size
+        items, total = product_repo.search_and_filter(
+            db=db,
+            skip=skip,
+            limit=page_size,
+            category_id=category_id,
+            search=search,
+        )
+        total_pages = math.ceil(total / page_size) if total > 0 else 0
+        return PageResponse[ProductResponse](
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
 
     def update_product(self, db: Session, product_id: int, product_in: ProductUpdate) -> Product:
         db_obj = self.get_product(db, product_id)

@@ -9,11 +9,13 @@ Yêu cầu:
 - PUT /products/{id}: Sửa sản phẩm
 - DELETE /products/{id}: Xóa sản phẩm
 """
+from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.schemas import (
     ApiResponse,
+    PageResponse,
     CategoryCreate,
     CategoryResponse,
     ProductCreate,
@@ -79,21 +81,30 @@ def create_product(
         data=product,
     )
 
+# Tuần 4: Nâng cấp endpoint GET /products hỗ trợ phân trang, tìm kiếm và lọc
 @router.get(
     "/products",
-    response_model=ApiResponse[list[ProductResponse]],
+    response_model=ApiResponse[PageResponse[ProductResponse]],
     status_code=status.HTTP_200_OK,
 )
 def get_products(
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, ge=1, le=100),
+    page: int = Query(default=1, ge=1, description="Trang hiện tại (bắt đầu từ 1)"),
+    page_size: int = Query(default=10, ge=1, le=100, description="Số lượng bản ghi mỗi trang (tối đa 100)"),
+    category_id: Optional[int] = Query(default=None, description="Lọc theo ID danh mục"),
+    search: Optional[str] = Query(default=None, description="Tìm kiếm tương đối theo tên sản phẩm"),
     db: Session = Depends(get_db),
 ):
-    """Lấy danh sách các sản phẩm đang hoạt động."""
-    products = product_service.get_products(db, skip=skip, limit=limit)
+    """Lấy danh sách sản phẩm hỗ trợ phân trang, tìm kiếm và lọc theo danh mục."""
+    result = product_service.list_products(
+        db=db,
+        page=page,
+        page_size=page_size,
+        category_id=category_id,
+        search=search,
+    )
     return ApiResponse(
         message="Lấy danh sách sản phẩm thành công",
-        data=products,
+        data=result,
     )
 
 @router.get(

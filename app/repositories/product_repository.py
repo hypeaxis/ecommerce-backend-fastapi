@@ -10,7 +10,7 @@ Yêu cầu thực tập sinh tự thực hiện:
    - search_and_filter(db, skip, limit, category_id, search) -> (items, total)
 """
 from typing import Optional, List, Tuple
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
 from app.models.product import Product, Category
 from app.repositories.base import BaseRepository
@@ -50,8 +50,43 @@ class ProductRepository(BaseRepository[Product]):
             .limit(limit)
         )
         return list(db.scalars(stmt).all())
-    # TODO: Thực tập sinh tự cài đặt get_by_sku và search_and_filter ở Tuần 3 & 4...
+    # Tuần 4: Tìm kiếm, lọc theo danh mục và phân trang
+    def search_and_filter(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 10,
+        category_id: Optional[int] = None,
+        search: Optional[str] = None,
+    ) -> Tuple[List[Product], int]:
+        stmt = select(Product).where(Product.is_active.is_(True))
+        count_stmt = select(func.count()).select_from(Product).where(Product.is_active.is_(True))
 
+        if category_id is not None:
+            stmt = stmt.where(Product.category_id == category_id)
+            count_stmt = count_stmt.where(Product.category_id == category_id)
+
+        if search and search.strip():
+            escaped_search = (
+                search.strip()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            )
+            search_pattern = f"%{escaped_search}%"
+            stmt = stmt.where(Product.name.ilike(search_pattern, escape="\\"))
+            count_stmt = count_stmt.where(Product.name.ilike(search_pattern, escape="\\"))
+
+        total = db.scalar(count_stmt) or 0
+        stmt = (
+            stmt.options(joinedload(Product.category))
+            .order_by(Product.id.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        items = list(db.scalars(stmt).all())
+
+        return items, total
 
 category_repo = CategoryRepository()
 product_repo = ProductRepository()
