@@ -18,7 +18,7 @@ class UserRepository(BaseRepository[User]):
 
     def get_by_email(self, db: Session, email: str) -> Optional[User]:
         # TODO: Viết câu lệnh select User theo email ở Tuần 5
-        stmt = select(User).where(User.email == email)
+        stmt = select(User).where(User.email == email.strip().lower())
         return db.scalar(stmt)
 
 

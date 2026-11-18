@@ -12,7 +12,8 @@ Yêu cầu:
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_db
+from app.api.deps import get_db, require_roles
+from app.models.user import UserRole
 from app.schemas import (
     ApiResponse,
     PageResponse,
@@ -34,6 +35,7 @@ router = APIRouter(tags=["Products & Categories"])
     "/categories",
     response_model=ApiResponse[CategoryResponse],
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_roles([UserRole.ADMIN]))],
 )
 def create_category(
     category_in: CategoryCreate,
@@ -69,6 +71,7 @@ def get_categories(
     "/products",
     response_model=ApiResponse[ProductResponse],
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_roles([UserRole.ADMIN]))],
 )
 def create_product(
     product_in: ProductCreate,
@@ -127,6 +130,7 @@ def get_product(
     "/products/{id}",
     response_model=ApiResponse[ProductResponse],
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(require_roles([UserRole.ADMIN]))],
 )
 def update_product(
     id: int,
@@ -143,6 +147,7 @@ def update_product(
 @router.delete(
     "/products/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_roles([UserRole.ADMIN]))],
 )
 def delete_product(
     id: int,

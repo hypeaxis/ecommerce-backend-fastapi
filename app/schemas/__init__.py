@@ -8,6 +8,13 @@ from app.schemas.product import (
     ProductUpdate,
     ProductResponse,
 )
+from app.schemas.user import (
+    UserRegister,
+    UserLogin,
+    Token,
+    UserResponse,
+)
+
 __all__ = [
     "ApiResponse",
     "PageParams",
@@ -19,4 +26,8 @@ __all__ = [
     "ProductCreate",
     "ProductUpdate",
     "ProductResponse",
+    "UserRegister",
+    "UserLogin",
+    "Token",
+    "UserResponse",
 ]
