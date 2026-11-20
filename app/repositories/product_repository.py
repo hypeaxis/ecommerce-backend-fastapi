@@ -88,5 +88,10 @@ class ProductRepository(BaseRepository[Product]):
 
         return items, total
 
+    # Tuần 6: Khóa dòng sản phẩm phục vụ transaction đặt hàng
+    def get_by_id_for_update(self, db: Session, id: int) -> Optional[Product]:
+        stmt = select(Product).where(Product.id == id).with_for_update()
+        return db.scalar(stmt)
+
 category_repo = CategoryRepository()
 product_repo = ProductRepository()
